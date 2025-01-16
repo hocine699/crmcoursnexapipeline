@@ -120,21 +120,18 @@ class DashboardController extends Controller
             }
         } else {
 
-            if (!file_exists(storage_path() . "/installed")) {
-                header('location:install');
-                die;
-            } else {
+            
                 $settings = Utility::settings();
                 if ($settings['display_landing_page'] == 'on' && \Schema::hasTable('landing_page_settings')) {
                     $plans = Plan::get();
 
                     $get_section = LandingPageSections::orderBy('section_order', 'ASC')->get();
-
+                    
                     return view('landingpage::layouts.landingpage', compact('plans', 'get_section'));
                 } else {
                     return redirect('login');
                 }
-            }
+            
         }
     }
     public function getOrderChart($arrParam)

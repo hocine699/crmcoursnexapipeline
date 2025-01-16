@@ -20,8 +20,22 @@ COPY . /var/www/html
 # Installer les dépendances PHP
 RUN composer install
 
-# Donner les permissions appropriées
-RUN chown -R www-data:www-data /var/www/html/storage /var/www/html/bootstrap/cache
+# Créer les répertoires nécessaires et définir les permissions
+RUN mkdir -p storage/framework/sessions \
+    && mkdir -p storage/framework/views \
+    && mkdir -p storage/framework/cache \
+    && mkdir -p storage/logs \
+    && chmod -R 777 storage \
+    && chmod -R 777 bootstrap/cache
 
 # Exposer le port 80
 EXPOSE 80
+
+# Exécuter les commandes supplémentaires
+RUN composer dump-autoload \
+    && rm -f /var/www/html/.env \
+    && cp /var/www/html/.env.example /var/www/html/.env \
+    && php artisan key:generate
+
+# Démarrer le serveur
+CMD ["php", "artisan", "serve", "--host=0.0.0.0", "--port=80"]

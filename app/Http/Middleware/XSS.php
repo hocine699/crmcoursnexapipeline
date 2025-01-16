@@ -67,8 +67,8 @@ class XSS
 
         if(!file_exists(storage_path() . "/installed"))
         {
-            header('location:install');
-            die;
+            //header('location:install');
+            //die;
 
         }
         $landingdata = LandingPageSections::all()->count();
