@@ -31,7 +31,7 @@ phases:
       - zip -r deployment-package.zip . -x "node_modules/*" "vendor/*" "storage/logs/*" ".env" ".git/*"
       - echo "Déploiement sur Elastic Beanstalk"
       - eb init -p php-8.2 my-app --region us-west-2
-      - eb create my-app-env
+      - eb use Hocine-php-env
       - eb deploy
 
 artifacts:
