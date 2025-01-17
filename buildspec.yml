@@ -25,7 +25,7 @@ phases:
       # Assurez-vous que Composer est installé
       - composer --version
 
-  pre_build:
+  pre_build: 
     commands:
       # Créer les répertoires nécessaires pour Laravel
       - mkdir -p storage/framework/sessions
