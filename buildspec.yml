@@ -8,6 +8,7 @@ phases:
       - curl -sS https://getcomposer.org/installer | php
       - mv composer.phar /usr/local/bin/composer
       - composer --version
+      - npm cache clean --force
       - npm install -g npm@latest
   build:
     commands:
@@ -28,5 +29,3 @@ phases:
       - zip -r deployment-package.zip . -x "node_modules/*" "vendor/*" "storage/logs/*" ".env" ".git/*"
 artifacts:
   files:
-    - deployment-package.zip
-  discard-paths: yes
