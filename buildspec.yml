@@ -31,6 +31,9 @@ phases:
       - echo "Démarrage de la phase post_build"
       - zip -r deployment-package.zip . -x "node_modules/*" "vendor/*" "storage/logs/*" ".env" ".git/*"
       - echo "Déploiement sur Elastic Beanstalk"
+      - aws configure set aws_access_key_id $AWS_ACCESS_KEY_ID
+      - aws configure set aws_secret_access_key $AWS_SECRET_ACCESS_KEY
+      - aws configure set default.region us-west-2
       - eb init -p php-8.2 my-app --region us-west-2
       - eb use Hocine-php-env
       - eb deploy
