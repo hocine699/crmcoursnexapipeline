@@ -1,31 +1,39 @@
 version: 0.2
 
 phases:
-  pre_build:
+  install:
+    runtime-versions:
+      php: 8.2
+      nodejs: 12
     commands:
-      - echo "Démarrage de la phase pre_build"
-      - echo "Mise à jour des dépendances système"
+      - echo "Installation des dépendances système"
       - curl -sS https://getcomposer.org/installer | php
       - mv composer.phar /usr/local/bin/composer
       - composer --version
       - npm cache clean --force
       - npm install -g npm@latest
+  pre_build:
+    commands:
+      - echo "Démarrage de la phase pre_build"
+      - echo "Mise à jour des dépendances système"
+      - composer install --no-dev --optimize-autoloader
+      - npm install
   build:
     commands:
       - echo "Démarrage de la phase build"
-      - echo "Installation des dépendances PHP via Composer"
-      - composer install --no-dev --optimize-autoloader
-      - echo "Installation des dépendances front-end via NPM"
-      - npm install
       - npm run prod
-      - echo "Mise en cache des configurations Laravel"
       - php artisan config:cache
       - php artisan route:cache
       - php artisan view:cache
   post_build:
     commands:
       - echo "Démarrage de la phase post_build"
-      - echo "Création de l'archive pour Elastic Beanstalk"
       - zip -r deployment-package.zip . -x "node_modules/*" "vendor/*" "storage/logs/*" ".env" ".git/*"
+      - echo "Déploiement sur Elastic Beanstalk"
+      - eb init -p php-8.2 my-app --region us-west-2
+      - eb create my-app-env
+      - eb deploy
+
 artifacts:
   files:
+    - deployment-package.zip
