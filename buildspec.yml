@@ -10,7 +10,7 @@ phases:
       - curl -sS https://getcomposer.org/installer | php
       - mv composer.phar /usr/local/bin/composer
       - composer --version
-      - npm install -g npm@latest
+      - npm install -g npm@8
   pre_build:
     commands:
       - echo "Démarrage de la phase pre_build"
