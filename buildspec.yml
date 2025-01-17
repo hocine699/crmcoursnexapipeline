@@ -11,6 +11,8 @@ phases:
       - mv composer.phar /usr/local/bin/composer
       - composer --version
       - npm install -g npm@8
+      - pip install --upgrade pip
+      - pip install awsebcli
   pre_build:
     commands:
       - echo "Démarrage de la phase pre_build"
