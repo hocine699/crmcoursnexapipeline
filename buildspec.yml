@@ -1,43 +1,96 @@
 version: 0.2
-
+env:
+  secrets-manager:
+    DB_USERNAME: "prod/crm/mysql:DB_USERNAME"
+    DB_PASSWORD: "prod/crm/mysql:DATABASE_PASSWORD"
+  exported-variables:
+    - DB_USERNAME
+    - DB_PASSWORD
 phases:
   install:
     runtime-versions:
       php: 8.2
-      nodejs: 16
     commands:
-      - echo "Installation des dépendances système"
-      - curl -sS https://getcomposer.org/installer | php
-      - mv composer.phar /usr/local/bin/composer
-      - composer --version
-      - npm install -g npm@8
-      - pip install --upgrade pip
-      - pip install awsebcli
+      - apt-get update -y
+      - curl -sS https://getcomposer.org/installer | php -- --install-dir=/usr/local/bin --filename=composer
+      - apt-get install -y libpq-dev libzip-dev
+      - apt-get install -y php-pgsql
+      - apt-get install -y php-bcmath
+      - apt-get install -y php-ctype
+      - apt-get install -y php-fileinfo
+      - apt-get install -y php-mbstring
+      - apt-get install -y php-mysql
+      - apt-get install -y php-tokenizer
+      - apt-get install -y php-xml
+      - apt-get install -y php-json
+      - apt-get install -y php-pear
+      - apt-get install -y php-pear php-dev
+      - apt-get install -y php-imagick
+      - apt-get install -y imagemagick
+      - apt-get install -y libmagickwand-dev
+      - pecl install imagick
+      - curl -sS https://getcomposer.org/installer -o composer-setup.php
+      - php composer-setup.php --install-dir=/usr/local/bin --filename=composer
   pre_build:
     commands:
-      - echo "Démarrage de la phase pre_build"
-      - echo "Mise à jour des dépendances système"
-      - composer install --no-dev --optimize-autoloader
+      #- echo "Current repo $(pwd)"
+      - mkdir -p storage/framework/sessions
+      - mkdir -p storage/framework/views
+      - mkdir -p storage/framework/cache
+      - mkdir -p storage/logs
+      - chmod -R 777 storage
+      - chmod -R 777 storage/framework
+      - chmod -R 777 storage/framework/cache
+      - chmod -R 777 storage/framework/views
+      - chmod -R 777 storage/framework/sessions
+      - chmod -R 777 resources/lang
+      - chmod -R 777 bootstrap/cache
+      - chown -R root:root storage
+      - ls -l storage
+      - ls -l bootstrap/cache
+      - export CACHE_DRIVER=file
+      - export FILESYSTEM_DRIVER=local
+      - export DATABASE_CREDS_JSON=$(aws secretsmanager get-secret-value --secret-id prod/crm/mysql --region eu-central-1 --output json)
+      - export DATABASE_HOST=$(echo $DATABASE_CREDS_JSON | jq -r '.SecretString | fromjson | .host')
+      - export DATABASE_NAME=$(echo $DATABASE_CREDS_JSON | jq -r '.SecretString | fromjson | .dbname')
+      - export DATABASE_USER=$(echo $DATABASE_CREDS_JSON | jq -r '.SecretString | fromjson | .username')
+      - export DATABASE_PASSWORD=$(echo $DATABASE_CREDS_JSON | jq -r '.SecretString | fromjson | .password')
+      - composer install
       - npm install
+      - mv .env.prod .env
+      #- echo "Listing project files before build:"
+      #- ls -alR
   build:
+    on-failure: ABORT
     commands:
-      - echo "Démarrage de la phase build"
-      - npm run prod
+      #- whoami
+      #- echo "Vérification de la présence des fichiers .ebextensions"
+      #- ls -la .ebextensions
+      # Enable Imagick extension in PHP configuration
+      #- echo "extension=imagick.so" | sudo tee -a /etc/php.ini
+      - npm run production
+      - php artisan key:generate
+      - php artisan storage:link
+      #- php artisan config:clear
+      - php artisan cache:clear
+      - php artisan view:clear
       - php artisan config:cache
-      - php artisan route:cache
-      - php artisan view:cache
+      - php artisan optimize:clear
+      - php artisan migrate --force
   post_build:
     commands:
-      - echo "Démarrage de la phase post_build"
-      - zip -r deployment-package.zip . -x "node_modules/*" "vendor/*" "storage/logs/*" ".env" ".git/*"
-      - echo "Déploiement sur Elastic Beanstalk"
-      - aws configure set aws_access_key_id $AWS_ACCESS_KEY_ID
-      - aws configure set aws_secret_access_key $AWS_SECRET_ACCESS_KEY
-      - aws configure set default.region us-west-2
-      - eb init -p php-8.2 my-app --region us-west-2
-      - eb use Hocine-php-env
-      - eb deploy
-
+      #- sudo systemctl restart httpd.service
+      - php artisan test
+      - echo "Post build 🏗"
+      - echo "Ensuring postdeploy script is executable..."
+      - chmod +x .platform/hooks/postdeploy/postdeploy.sh  # Donne les droits d'exécution au script
+      - echo "Build completed on `date` 🏗"
 artifacts:
   files:
-    - deployment-package.zip
+    - '**/*'
+    #- '.ebextensions/**/*'
+    - '.platform/**/*'
+  name: $(date +%Y-%m-%dT%H:%M:%S).zip
+proxy:
+  upload-artifacts: no
+  logs: no
