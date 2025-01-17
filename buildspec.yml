@@ -4,13 +4,12 @@ phases:
   install:
     runtime-versions:
       php: 8.2
-      nodejs: 12
+      nodejs: 14
     commands:
       - echo "Installation des dépendances système"
       - curl -sS https://getcomposer.org/installer | php
       - mv composer.phar /usr/local/bin/composer
       - composer --version
-      - npm cache clean --force
       - npm install -g npm@latest
   pre_build:
     commands:
